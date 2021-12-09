@@ -1,7 +1,8 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf, fs::File, io::Write};
 
 use anyhow::Context;
 use clap::Parser;
+use tera::Tera;
 use tree_sitter::Query;
 
 mod parse_file;
@@ -14,16 +15,16 @@ pub enum CppDeriveError {
 
 const QUERY_SOURCE: &str = include_str!("query.scm");
 
-/// Reads the unit test format for highlighting of tree-sitter
-/// https://tree-sitter.github.io/tree-sitter/syntax-highlighting#unit-testing to make it available for
-/// unit test for https://github.com/nvim-treesitter/nvim-treesitter.
-/// Output will be printed to stdout.
+/// Generates C++ sources from source code annotations
 #[derive(clap::Parser, Debug)]
 #[clap(version, author)]
 struct Args {
-    /// Source file with highlight assertions following https://tree-sitter.github.io/tree-sitter/syntax-highlighting#unit-testing
+    /// Folder path for C++ templates
+    #[clap(short, long)]
+    template_folder: PathBuf,
+    /// Input C++ files to parse for annotations
     output_file: PathBuf,
-    /// Parser library to load (e.g. cpp.so from nvim-treesitter/parser)
+    /// Output file name (will be extended by .h/.cpp to generate header and source file)
     input_files: Vec<PathBuf>,
 }
 
@@ -40,11 +41,29 @@ fn main() -> anyhow::Result<()> {
 
     let query = Query::new(tree_sitter_cuda::language(), &QUERY_SOURCE)
         .with_context(|| "Query compilation failed")?;
-
+    let tera = Tera::new(format!("{}/**/*", args.template_folder.to_string_lossy()).as_str())?;
     for path in args.input_files.iter() {
         let source_code = std::fs::read(path)?;
-        let classes = parse_file::parse_classes(&mut parser, &source_code, &query);
-        dbg!(&classes);
+        let classes = parse_file::parse_classes(&mut parser, &source_code, &query)?;
+
+        let mut per_attribute = HashMap::new();
+        for c in classes.values() {
+            for a in c.attributes.iter() {
+                per_attribute.entry(a).or_insert(Vec::new()).push(c);
+            }
+        }
+        let mut cpp_file = File::create(format!("{}.cpp", args.output_file.to_string_lossy()))?;
+        let mut header_file = File::create(format!("{}.hpp", args.output_file.to_string_lossy()))?;
+
+        header_file.write(b"#pragma once")?;
+        for (attribute, classes) in per_attribute {
+            let mut context = tera::Context::new();
+            context.insert("classes", &classes);
+            context.insert("header_name", &format!("{}.hpp", args.output_file.file_name().unwrap().to_string_lossy()));
+
+            cpp_file.write(tera.render(format!("{attribute}/source.cpp").as_str(), &context)?.as_bytes())?;
+            header_file.write(tera.render(format!("{attribute}/header.hpp").as_str(), &context)?.as_bytes())?;
+        }
     }
 
     Ok(())

@@ -1,18 +1,21 @@
-use std::collections::HashMap;
+use once_cell::unsync::Lazy;
+use regex::Regex;
+use serde::Serialize;
+use std::collections::{HashMap, HashSet};
 
 use tree_sitter::{Query, QueryCursor};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Field<'field> {
     pub field_name: &'field str,
     pub field_type: &'field str,
     pub default_value: Option<&'field str>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Class<'class> {
     pub name: &'class str,
-    pub attributes: HashMap<usize, &'class str>,
+    pub attributes: HashSet<String>,
     pub fields: HashMap<&'class str, Field<'class>>,
 }
 
@@ -29,7 +32,7 @@ pub fn parse_classes<'a>(
     for (m, _) in query_cursor.captures(&query, tree.root_node(), source_code.as_slice()) {
         let mut class_id = None;
         let mut class_name = None;
-        let mut attributes = HashMap::new();
+        let mut attributes = HashSet::new();
 
         let mut field_name = None;
         let mut field_type = None;
@@ -48,13 +51,16 @@ pub fn parse_classes<'a>(
                     );
                 }
                 "attribute" => {
-                    attributes.insert(
-                        capture.node.id(),
-                        capture
-                            .node
-                            .utf8_text(&source_code)
-                            .expect("Failed to get node text"),
-                    );
+                    let attribute_text = capture
+                        .node
+                        .utf8_text(&source_code)
+                        .expect("Failed to get node text");
+                    let regex = Lazy::new(|| Regex::new(r"derive\((.*)\)").unwrap());
+                    for cap in regex.captures_iter(attribute_text) {
+                        for s in cap[1].split(',') {
+                            attributes.insert(s.into());
+                        }
+                    }
                 }
                 "decl" => {
                     field_name = Some(
