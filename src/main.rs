@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, fs::File, io::Write};
+use std::{collections::HashMap, fs::File, io::Write, path::PathBuf};
 
 use anyhow::Context;
 use clap::Parser;
@@ -42,6 +42,12 @@ fn main() -> anyhow::Result<()> {
     let query = Query::new(tree_sitter_cuda::language(), &QUERY_SOURCE)
         .with_context(|| "Query compilation failed")?;
     let tera = Tera::new(format!("{}/**/*", args.template_folder.to_string_lossy()).as_str())?;
+
+    let mut cpp_file = File::create(format!("{}.cpp", args.output_file.to_string_lossy()))?;
+    let mut header_file = File::create(format!("{}.hpp", args.output_file.to_string_lossy()))?;
+
+    header_file.write(b"#pragma once")?;
+
     for path in args.input_files.iter() {
         let source_code = std::fs::read(path)?;
         let classes = parse_file::parse_classes(&mut parser, &source_code, &query)?;
@@ -52,17 +58,25 @@ fn main() -> anyhow::Result<()> {
                 per_attribute.entry(a).or_insert(Vec::new()).push(c);
             }
         }
-        let mut cpp_file = File::create(format!("{}.cpp", args.output_file.to_string_lossy()))?;
-        let mut header_file = File::create(format!("{}.hpp", args.output_file.to_string_lossy()))?;
-
-        header_file.write(b"#pragma once")?;
         for (attribute, classes) in per_attribute {
             let mut context = tera::Context::new();
             context.insert("classes", &classes);
-            context.insert("header_name", &format!("{}.hpp", args.output_file.file_name().unwrap().to_string_lossy()));
+            context.insert(
+                "header_name",
+                &format!(
+                    "{}.hpp",
+                    args.output_file.file_name().unwrap().to_string_lossy()
+                ),
+            );
 
-            cpp_file.write(tera.render(format!("{attribute}/source.cpp").as_str(), &context)?.as_bytes())?;
-            header_file.write(tera.render(format!("{attribute}/header.hpp").as_str(), &context)?.as_bytes())?;
+            cpp_file.write(
+                tera.render(format!("{attribute}/source.cpp").as_str(), &context)?
+                    .as_bytes(),
+            )?;
+            header_file.write(
+                tera.render(format!("{attribute}/header.hpp").as_str(), &context)?
+                    .as_bytes(),
+            )?;
         }
     }
 
