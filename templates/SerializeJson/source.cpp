@@ -2,6 +2,7 @@
 
 #include <json.hpp>
 
+namespace cpp_derive {
 {%- for class in classes %}
 
 nlohman::json serialize_json(const {{ class.name }}& item) {
@@ -12,3 +13,5 @@ nlohman::json serialize_json(const {{ class.name }}& item) {
   return j;
 }
 {%- endfor %}
+
+}
