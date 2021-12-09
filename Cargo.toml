@@ -2,6 +2,11 @@
 name = "cpp-derive"
 version = "0.1.0"
 edition = "2021"
+keywords = ["incremental", "parsing", "cuda"]
+categories = ["parsing", "text-editors"]
+repository = "https://github.com/theHamsta/cpp-derive"
+license = "MIT"
+authors = ["Stephan Seitz <stephan.seitz@fau.de>"]
 
 [dependencies]
 tera = "1.15.0"
