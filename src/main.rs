@@ -13,7 +13,7 @@ pub enum CppDeriveError {
     NoInputFile,
 }
 
-const QUERY_SOURCE: &str = include_str!("query.scm");
+const CLASSES_QUERY: &str = include_str!("classes.scm");
 
 /// Generates C++ sources from source code annotations
 #[derive(clap::Parser, Debug)]
@@ -39,7 +39,7 @@ fn main() -> anyhow::Result<()> {
         .set_language(tree_sitter_cuda::language())
         .expect("Error loading cuda grammar");
 
-    let query = Query::new(tree_sitter_cuda::language(), &QUERY_SOURCE)
+    let class_query = Query::new(tree_sitter_cuda::language(), &CLASSES_QUERY)
         .with_context(|| "Query compilation failed")?;
     let tera = Tera::new(format!("{}/**/*", args.template_folder.to_string_lossy()).as_str())?;
 
@@ -47,14 +47,17 @@ fn main() -> anyhow::Result<()> {
     let mut header_file = File::create(format!("{}.hpp", args.output_file.to_string_lossy()))?;
 
     header_file.write(b"#pragma once")?;
-    cpp_file.write(format!(
-                    "#include \"{}.hpp\"",
-                    args.output_file.file_name().unwrap().to_string_lossy()
-                ).as_bytes())?;
+    cpp_file.write(
+        format!(
+            "#include \"{}.hpp\"",
+            args.output_file.file_name().unwrap().to_string_lossy()
+        )
+        .as_bytes(),
+    )?;
 
     for path in args.input_files.iter() {
         let source_code = std::fs::read(path)?;
-        let classes = parse_file::parse_classes(&mut parser, &source_code, &query)?;
+        let classes = parse_file::parse_classes(&mut parser, &source_code, &class_query)?;
 
         let mut per_attribute = HashMap::new();
         for c in classes.values() {
