@@ -1,0 +1,12 @@
+[package]
+name = "cpp-derive"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tera = "1.15.0"
+tree-sitter-cuda = "0.1.0"
+tree-sitter = "0.20.1"
+clap = { version = "3.0.0-rc.1", features = ["derive", "suggestions"] }
+anyhow = "1.0"
+thiserror = "1.0.30"
