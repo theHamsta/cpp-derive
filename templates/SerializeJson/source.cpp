@@ -2,8 +2,7 @@
 
 #include <json.hpp>
 
-
-{% for class in classes %}
+{%- for class in classes %}
 
 nlohman::json serialize_json(const {{ class.name }}& item) {
   nlohman::json j;
@@ -12,5 +11,4 @@ nlohman::json serialize_json(const {{ class.name }}& item) {
   {% endfor %}
   return j;
 }
-
-{% endfor %}
+{%- endfor %}
