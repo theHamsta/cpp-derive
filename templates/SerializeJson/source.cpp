@@ -1,5 +1,3 @@
-#include "{{ header_name }}"
-
 #include <json.hpp>
 
 namespace cpp_derive {

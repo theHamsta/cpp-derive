@@ -47,6 +47,10 @@ fn main() -> anyhow::Result<()> {
     let mut header_file = File::create(format!("{}.hpp", args.output_file.to_string_lossy()))?;
 
     header_file.write(b"#pragma once")?;
+    cpp_file.write(format!(
+                    "#include \"{}.hpp\"",
+                    args.output_file.file_name().unwrap().to_string_lossy()
+                ).as_bytes())?;
 
     for path in args.input_files.iter() {
         let source_code = std::fs::read(path)?;
@@ -61,13 +65,6 @@ fn main() -> anyhow::Result<()> {
         for (attribute, classes) in per_attribute {
             let mut context = tera::Context::new();
             context.insert("classes", &classes);
-            context.insert(
-                "header_name",
-                &format!(
-                    "{}.hpp",
-                    args.output_file.file_name().unwrap().to_string_lossy()
-                ),
-            );
 
             cpp_file.write(
                 tera.render(format!("{attribute}/source.cpp").as_str(), &context)?
