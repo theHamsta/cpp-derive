@@ -5,7 +5,7 @@ use clap::Parser;
 use tera::Tera;
 use tree_sitter::Query;
 
-mod parse_file;
+mod parse;
 
 #[derive(thiserror::Error, Debug)]
 pub enum CppDeriveError {
@@ -46,10 +46,10 @@ fn main() -> anyhow::Result<()> {
     let mut cpp_file = File::create(format!("{}.cpp", args.output_file.to_string_lossy()))?;
     let mut header_file = File::create(format!("{}.hpp", args.output_file.to_string_lossy()))?;
 
-    header_file.write(b"#pragma once")?;
+    header_file.write(b"#pragma once\n")?;
     cpp_file.write(
         format!(
-            "#include \"{}.hpp\"",
+            "#include \"{}.hpp\"\n",
             args.output_file.file_name().unwrap().to_string_lossy()
         )
         .as_bytes(),
@@ -57,7 +57,7 @@ fn main() -> anyhow::Result<()> {
 
     for path in args.input_files.iter() {
         let source_code = std::fs::read(path)?;
-        let classes = parse_file::parse_classes(&mut parser, &source_code, &class_query)?;
+        let classes = parse::parse_classes(&mut parser, &source_code, &class_query)?;
 
         let mut per_attribute = HashMap::new();
         for c in classes.values() {
@@ -68,6 +68,7 @@ fn main() -> anyhow::Result<()> {
         for (attribute, classes) in per_attribute {
             let mut context = tera::Context::new();
             context.insert("classes", &classes);
+            dbg!(&context);
 
             cpp_file.write(
                 tera.render(format!("{attribute}/source.cpp").as_str(), &context)?
