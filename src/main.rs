@@ -22,9 +22,9 @@ struct Args {
     /// Folder path for C++ templates
     #[clap(short, long)]
     template_folder: PathBuf,
-    /// Input C++ files to parse for annotations
-    output_file: PathBuf,
     /// Output file name (will be extended by .h/.cpp to generate header and source file)
+    output_file: PathBuf,
+    /// Input C++ files to parse for annotations
     input_files: Vec<PathBuf>,
 }
 
