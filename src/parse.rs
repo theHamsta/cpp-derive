@@ -58,7 +58,7 @@ pub fn parse_classes<'a>(
                     let regex = Lazy::new(|| Regex::new(r"derive\((.*)\)").unwrap());
                     for cap in regex.captures_iter(attribute_text) {
                         for s in cap[1].split(',') {
-                            attributes.insert(s.into());
+                            attributes.insert(s.trim().into());
                         }
                     }
                 }

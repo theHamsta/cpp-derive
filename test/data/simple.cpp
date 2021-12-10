@@ -1,6 +1,6 @@
 #include <vector>
 
-struct [[derive(SerializeJson,ZMQSend)]] Foo {
+struct [[derive(SerializeJson, ZMQSend)]] Foo {
   int a = 1;
   public:
   int b;
