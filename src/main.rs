@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs::File, io::Write, path::PathBuf};
 
-use anyhow::Context;
+use anyhow::{Context, bail};
 use clap::Parser;
 use tera::Tera;
 use tree_sitter::Query;
@@ -31,7 +31,7 @@ struct Args {
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     if args.input_files.is_empty() {
-        return Err(CppDeriveError::NoInputFile.into());
+        bail!(CppDeriveError::NoInputFile);
     }
 
     let mut parser = tree_sitter::Parser::new();
