@@ -29,7 +29,7 @@ pub fn parse_classes<'a>(
 
     let mut query_cursor = QueryCursor::new();
 
-    for (m, _) in query_cursor.captures(&query, tree.root_node(), source_code.as_slice()) {
+    for (m, _) in query_cursor.captures(query, tree.root_node(), source_code.as_slice()) {
         let mut class_id = None;
         let mut class_name = None;
         let mut attributes = HashSet::new();
@@ -46,14 +46,14 @@ pub fn parse_classes<'a>(
                     class_name = Some(
                         capture
                             .node
-                            .utf8_text(&source_code)
+                            .utf8_text(source_code)
                             .expect("Failed to get node text"),
                     );
                 }
                 "attribute" => {
                     let attribute_text = capture
                         .node
-                        .utf8_text(&source_code)
+                        .utf8_text(source_code)
                         .expect("Failed to get node text");
                     let regex = Lazy::new(|| Regex::new(r"derive\((.*)\)").unwrap());
                     for cap in regex.captures_iter(attribute_text) {
@@ -66,7 +66,7 @@ pub fn parse_classes<'a>(
                     field_name = Some(
                         capture
                             .node
-                            .utf8_text(&source_code)
+                            .utf8_text(source_code)
                             .expect("Failed to get node text"),
                     )
                 }
@@ -74,7 +74,7 @@ pub fn parse_classes<'a>(
                     field_type = Some(
                         capture
                             .node
-                            .utf8_text(&source_code)
+                            .utf8_text(source_code)
                             .expect("Failed to get node text"),
                     )
                 }
@@ -82,7 +82,7 @@ pub fn parse_classes<'a>(
                     default_value = Some(
                         capture
                             .node
-                            .utf8_text(&source_code)
+                            .utf8_text(source_code)
                             .expect("Failed to get node text"),
                     )
                 }

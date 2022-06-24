@@ -30,7 +30,7 @@ struct Args {
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    if args.input_files.len() < 1 {
+    if args.input_files.is_empty() {
         return Err(CppDeriveError::NoInputFile.into());
     }
 
@@ -39,15 +39,15 @@ fn main() -> anyhow::Result<()> {
         .set_language(tree_sitter_cuda::language())
         .expect("Error loading cuda grammar");
 
-    let class_query = Query::new(tree_sitter_cuda::language(), &CLASSES_QUERY)
+    let class_query = Query::new(tree_sitter_cuda::language(), CLASSES_QUERY)
         .with_context(|| "Query compilation failed")?;
     let tera = Tera::new(format!("{}/**/*", args.template_folder.to_string_lossy()).as_str())?;
 
     let mut cpp_file = File::create(format!("{}.cpp", args.output_file.to_string_lossy()))?;
     let mut header_file = File::create(format!("{}.hpp", args.output_file.to_string_lossy()))?;
 
-    header_file.write(b"#pragma once\n")?;
-    cpp_file.write(
+    let _ = header_file.write(b"#pragma once\n")?;
+    let _ = cpp_file.write(
         format!(
             "#include \"{}.hpp\"\n",
             args.output_file.file_name().unwrap().to_string_lossy()
@@ -70,11 +70,11 @@ fn main() -> anyhow::Result<()> {
             context.insert("classes", &classes);
             dbg!(&context);
 
-            cpp_file.write(
+            let _ = cpp_file.write(
                 tera.render(format!("{attribute}/source.cpp").as_str(), &context)?
                     .as_bytes(),
             )?;
-            header_file.write(
+            let _ = header_file.write(
                 tera.render(format!("{attribute}/header.hpp").as_str(), &context)?
                     .as_bytes(),
             )?;
